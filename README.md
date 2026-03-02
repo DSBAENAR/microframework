@@ -17,6 +17,8 @@ MicroFramework is a minimalist web framework that converts a basic HTTP server i
 
 ```mermaid
 classDiagram
+    direction TB
+
     class App {
         +main(String[] args)$ void
     }
@@ -26,56 +28,19 @@ classDiagram
         -int port$
         +get(String path, RequestHandler handler)$ void
         +staticfiles(String path)$ void
-        +port(int p)$ void
         +start()$ void
-        +getServer()$ HttpServer
     }
 
     class HttpServer {
-        -int DEFAULT_PORT$
-        -int port
         -Map~String, RequestHandler~ getRoutes
         -String staticFilesPath
-        -boolean running
         -ServerSocket serverSocket
-        +HttpServer()
-        +HttpServer(int port)
-        +addGetRoute(String path, RequestHandler handler) void
-        +setStaticFilesPath(String path) void
-        +getStaticFilesPath() String
-        +getGetRoutes() Map~String, RequestHandler~
+        +addGetRoute(String, RequestHandler) void
         +start() void
         +stop() void
-        -handleClient(Socket clientSocket) void
-        -handleRestRequest(Request req, Response res, OutputStream out) void
-        -handleStaticFile(String path, OutputStream out) void
-        ~getContentType(String path)$ String
-    }
-
-    class Request {
-        -String method
-        -String path
-        -Map~String, String~ queryParams
-        -Map~String, String~ headers
-        +Request(String method, String path, Map queryParams, Map headers)
-        +getMethod() String
-        +getPath() String
-        +getValues(String name) String
-        +getQueryParams() Map~String, String~
-        +getHeader(String name) String
-        +parseQueryString(String queryString)$ Map~String, String~
-    }
-
-    class Response {
-        -int statusCode
-        -String contentType
-        -Map~String, String~ headers
-        +getStatusCode() int
-        +setStatusCode(int statusCode) void
-        +getContentType() String
-        +setContentType(String contentType) void
-        +setHeader(String name, String value) void
-        +getHeaders() Map~String, String~
+        -handleClient(Socket) void
+        -handleRestRequest(Request, Response, OutputStream) void
+        -handleStaticFile(String, OutputStream) void
     }
 
     class RequestHandler {
@@ -84,13 +49,31 @@ classDiagram
         +handle(Request req, Response res) String
     }
 
-    App ..> MicroFramework : uses static methods
-    MicroFramework --> HttpServer : composition
-    HttpServer --> RequestHandler : stores in route table
-    HttpServer ..> Request : creates
-    HttpServer ..> Response : creates
-    RequestHandler ..> Request : receives
-    RequestHandler ..> Response : receives
+    class Request {
+        -String method
+        -String path
+        -Map~String, String~ queryParams
+        +getValues(String name) String
+        +getMethod() String
+        +getPath() String
+        +parseQueryString(String)$ Map
+    }
+
+    class Response {
+        -int statusCode
+        -String contentType
+        +setStatusCode(int) void
+        +setContentType(String) void
+        +setHeader(String, String) void
+    }
+
+    App ..> MicroFramework : uses
+    MicroFramework *-- HttpServer : creates
+    HttpServer o-- "0..*" RequestHandler : routes
+    HttpServer ..> Request : creates per request
+    HttpServer ..> Response : creates per request
+    RequestHandler ..> Request : reads
+    RequestHandler ..> Response : configures
 ```
 
 ### Component Diagram
