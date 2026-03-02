@@ -15,52 +15,8 @@ MicroFramework is a minimalist web framework that converts a basic HTTP server i
 
 ### Class Diagram (UML)
 
-```mermaid
-classDiagram
-    direction TB
+<img width="289" height="541" alt="image" src="https://github.com/user-attachments/assets/e6631e9f-2323-48e6-b48f-f8a3600a7ac0" />
 
-    App ..> MicroFramework
-    MicroFramework *-- HttpServer
-    HttpServer o-- RequestHandler
-    RequestHandler ..> Request
-    RequestHandler ..> Response
-
-    class App {
-        +main()$
-    }
-
-    class MicroFramework {
-        +get(path, handler)$
-        +staticfiles(path)$
-        +start()$
-    }
-
-    class HttpServer {
-        -routes
-        -staticFilesPath
-        +start()
-        +stop()
-    }
-
-    class RequestHandler {
-        <<interface>>
-        +handle(req, res) String
-    }
-
-    class Request {
-        -method
-        -path
-        -queryParams
-        +getValues(name)
-    }
-
-    class Response {
-        -statusCode
-        -contentType
-        +setStatusCode()
-        +setContentType()
-    }
-```
 
 ### Component Diagram
 
