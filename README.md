@@ -13,32 +13,120 @@ MicroFramework is a minimalist web framework that converts a basic HTTP server i
 
 ## Architecture
 
+### Class Diagram (UML)
+
+```mermaid
+classDiagram
+    class App {
+        +main(String[] args)$ void
+    }
+
+    class MicroFramework {
+        -HttpServer server$
+        -int port$
+        +get(String path, RequestHandler handler)$ void
+        +staticfiles(String path)$ void
+        +port(int p)$ void
+        +start()$ void
+        +getServer()$ HttpServer
+    }
+
+    class HttpServer {
+        -int DEFAULT_PORT$
+        -int port
+        -Map~String, RequestHandler~ getRoutes
+        -String staticFilesPath
+        -boolean running
+        -ServerSocket serverSocket
+        +HttpServer()
+        +HttpServer(int port)
+        +addGetRoute(String path, RequestHandler handler) void
+        +setStaticFilesPath(String path) void
+        +getStaticFilesPath() String
+        +getGetRoutes() Map~String, RequestHandler~
+        +start() void
+        +stop() void
+        -handleClient(Socket clientSocket) void
+        -handleRestRequest(Request req, Response res, OutputStream out) void
+        -handleStaticFile(String path, OutputStream out) void
+        ~getContentType(String path)$ String
+    }
+
+    class Request {
+        -String method
+        -String path
+        -Map~String, String~ queryParams
+        -Map~String, String~ headers
+        +Request(String method, String path, Map queryParams, Map headers)
+        +getMethod() String
+        +getPath() String
+        +getValues(String name) String
+        +getQueryParams() Map~String, String~
+        +getHeader(String name) String
+        +parseQueryString(String queryString)$ Map~String, String~
+    }
+
+    class Response {
+        -int statusCode
+        -String contentType
+        -Map~String, String~ headers
+        +getStatusCode() int
+        +setStatusCode(int statusCode) void
+        +getContentType() String
+        +setContentType(String contentType) void
+        +setHeader(String name, String value) void
+        +getHeaders() Map~String, String~
+    }
+
+    class RequestHandler {
+        <<interface>>
+        <<FunctionalInterface>>
+        +handle(Request req, Response res) String
+    }
+
+    App ..> MicroFramework : uses static methods
+    MicroFramework --> HttpServer : composition
+    HttpServer --> RequestHandler : stores in route table
+    HttpServer ..> Request : creates
+    HttpServer ..> Response : creates
+    RequestHandler ..> Request : receives
+    RequestHandler ..> Response : receives
 ```
-┌─────────────────────────────────────────────────────┐
-│                    MicroFramework                    │
-│              (Static API Entry Point)                │
-│         get(), staticfiles(), start()                │
-└─────────────┬───────────────────────────────────────┘
-              │
-              ▼
-┌─────────────────────────────────────────────────────┐
-│                     HttpServer                       │
-│              (Core HTTP Server Engine)                │
-│                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │ Route Table   │  │ Static File  │  │  Thread   │ │
-│  │ (GET routes)  │  │   Resolver   │  │   Pool    │ │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
-│         │                 │                │        │
-└─────────┼─────────────────┼────────────────┼────────┘
-          │                 │                │
-          ▼                 ▼                ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│   Request    │  │   Response   │  │RequestHandler│
-│ (Query Params│  │ (Status Code │  │  (Lambda     │
-│  Headers,    │  │  Content-Type│  │   Interface) │
-│  Method)     │  │  Headers)    │  │              │
-└──────────────┘  └──────────────┘  └──────────────┘
+
+### Component Diagram
+
+```mermaid
+flowchart TB
+    Client([Client / Browser])
+
+    subgraph MicroFramework["MicroFramework Server"]
+        direction TB
+        API["MicroFramework API\nget() | staticfiles() | start()"]
+
+        subgraph HttpServer["HttpServer Engine"]
+            direction LR
+            TP["Thread Pool\n(10 threads)"]
+            Router["Route Table\n(ConcurrentHashMap)"]
+            StaticResolver["Static File\nResolver"]
+        end
+
+        API --> HttpServer
+    end
+
+    subgraph Models["Request/Response Model"]
+        direction LR
+        Req["Request\n- method, path\n- queryParams\n- headers"]
+        Res["Response\n- statusCode\n- contentType\n- headers"]
+        Handler["RequestHandler\n(Lambda Interface)"]
+    end
+
+    Client -->|"HTTP GET /hello?name=Pedro"| TP
+    TP --> Router
+    Router -->|"Match found"| Handler
+    Router -->|"No match"| StaticResolver
+    Handler --> Req
+    Handler --> Res
+    StaticResolver -->|"/webroot/..."| Static[("Static Files\n(HTML, CSS, JS, Images)")]
 ```
 
 ### Key Components
